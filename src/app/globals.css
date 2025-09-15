@@ -20,3 +20,22 @@ body{
   }
 }
 
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; 
+  height: 16px; 
+  border-radius: 50%;
+  background: #bbe65b; /* your color */
+  cursor: pointer;
+}
+
+/* for Firefox */
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #bbe65b; /* your color */
+  cursor: pointer;
+}
