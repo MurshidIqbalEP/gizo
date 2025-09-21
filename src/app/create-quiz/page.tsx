@@ -1,32 +1,63 @@
-"use client"
-import { useState } from "react"
-import { ArrowUpRight, Users, Hash, Brain, Zap, Check } from "lucide-react"
-import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect"
+"use client";
+import { useState } from "react";
+import {
+  ArrowUpRight,
+  Users,
+  Hash,
+  Brain,
+  Zap,
+  Check,
+  Lock,
+} from "lucide-react";
+import { BackgroundRippleEffect } from "@/components/ui/background-ripple-effect";
+import { Room, RoomErr } from "@/types/room";
+import { createRoom } from "@/services/roomService";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 const CreateQuizRoom = () => {
-  const [formData, setFormData] = useState({
+    const { user} = useUser();
+    const router = useRouter()
+    
+  const [formData, setFormData] = useState<Room>({
     roomName: "",
     userLimit: 10,
-    totalQuestions: 20,
     difficulty: "easy",
-  })
+    type: "public",
+  });
+  const [formDataErr, setFormDataErr] = useState<RoomErr>({
+    roomName: "",
+    userLimit: "",
+    difficulty: "",
+    type: "",
+  });
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
-  const handleGenerateQuiz = () => {
-    // AI quiz generation logic here
-    console.log("Generating AI quiz with:", formData)
-  }
+  const handleSubmit = async () => {
+    const err = { roomName: "", userLimit: "", difficulty: "", type: "" };
+    if (formData.roomName.trim() == "") {
+      err.roomName = "Room name is required";
+    } else if (formData.roomName.length < 3) {
+      err.roomName = "Room name must be at least 3 characters";
+    }
 
-  const handleSubmit = () => {
-    // Submit room creation logic here
-    console.log("Creating room with:", formData)
-  }
+    if (formData.userLimit <= 1) {
+      err.userLimit = "User limit must be at least 2";
+    }
+    setFormDataErr(err);
+
+    const hasError = Object.values(err).some((data) => data !== "");
+    if (!hasError) {
+      const room = await createRoom(formData.roomName,formData.userLimit,formData.difficulty,formData.type,user!.id)
+      router.push(`/createQuestions?roomId=${room.newRoom._id}`)
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -75,6 +106,9 @@ const CreateQuizRoom = () => {
                   placeholder="Enter your quiz room name"
                   className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#bbe65b] focus:border-transparent"
                 />
+                <p className="mt-1 text-sm text-red-500">
+                  {formDataErr.roomName}
+                </p>
               </div>
 
               {/* User Limit */}
@@ -102,33 +136,9 @@ const CreateQuizRoom = () => {
                     {formData.userLimit}
                   </div>
                 </div>
-              </div>
-
-              {/* Total Questions */}
-              <div>
-                <label className="flex items-center text-gray-700 font-medium mb-3">
-                  <Brain className="w-5 h-5 mr-2 text-[#bbe65b]" />
-                  Total Questions
-                </label>
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="range"
-                    min="5"
-                    max="100"
-                    step="5"
-                    value={formData.totalQuestions}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "totalQuestions",
-                        Number.parseInt(e.target.value)
-                      )
-                    }
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <div className="bg-[#bbe65b] text-gray-900 px-4 py-2 rounded-xl font-semibold min-w-[60px] text-center">
-                    {formData.totalQuestions}
-                  </div>
-                </div>
+                <p className="mt-1 text-sm text-red-500">
+                  {formDataErr.userLimit}
+                </p>
               </div>
 
               {/* Difficulty */}
@@ -161,15 +171,45 @@ const CreateQuizRoom = () => {
                 </div>
               </div>
 
+              {/* Availability */}
+              <div>
+                <label className="flex items-center text-gray-700 font-medium mb-3">
+                  <Lock className="w-5 h-5 mr-2 text-[#bbe65b]" />
+                  Type
+                </label>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => handleInputChange("type", "public")}
+                    className={`flex-1 py-3 px-6 rounded-2xl font-medium transition-all ${
+                      formData.type === "public"
+                        ? "bg-[#bbe65b] text-gray-900"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    Public
+                  </button>
+                  <button
+                    onClick={() => handleInputChange("type", "private")}
+                    className={`flex-1 py-3 px-6 rounded-2xl font-medium transition-all ${
+                      formData.type === "private"
+                        ? "bg-[#bbe65b] text-gray-900"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    Private
+                  </button>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex space-x-4 pt-6">
-                <button
+                {/* <button
                   onClick={handleGenerateQuiz}
                   className="flex-1 bg-green-900 text-white py-3 px-6 rounded-2xl font-medium flex items-center justify-center hover:bg-green-800 transition-colors"
                 >
                   <Brain className="w-5 h-5 mr-2" />
                   AI Generate Quiz
-                </button>
+                </button> */}
                 <button
                   onClick={handleSubmit}
                   className="flex-1 text-gray-600 py-3 px-6 border border-green-900 rounded-2xl font-medium flex items-center justify-center hover:bg-green-900 hover:text-white transition-colors"
@@ -195,7 +235,7 @@ const CreateQuizRoom = () => {
                 </span>
                 <span className="flex items-center">
                   <Brain className="w-4 h-4 mr-1" />
-                  {formData.totalQuestions} questions
+                  {formData.type} type
                 </span>
                 <span className="flex items-center">
                   <Zap className="w-4 h-4 mr-1" />
@@ -208,6 +248,6 @@ const CreateQuizRoom = () => {
       </section>
     </div>
   );
-}
+};
 
-export default CreateQuizRoom
+export default CreateQuizRoom;

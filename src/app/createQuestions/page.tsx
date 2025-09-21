@@ -1,19 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Plus, Trash2, Check } from "lucide-react"
+import { QuizOption, QuizQuestion } from "@/types/room"
+import { addQuestions } from "@/services/roomService"
+import { useSearchParams } from "next/navigation"
 
-interface QuizOption {
-  id: string
-  text: string
-  isCorrect: boolean
-}
 
-interface QuizQuestion {
-  id: string
-  question: string
-  options: QuizOption[]
-}
 
 export default function ManualQuizPage() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -24,6 +17,10 @@ export default function ManualQuizPage() {
     { id: "3", text: "", isCorrect: false },
     { id: "4", text: "", isCorrect: false },
   ])
+  const questionRef = useRef<HTMLTextAreaElement>(null);
+  const optionRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const seachparams = useSearchParams()
+  const roomId = seachparams.get("roomId")
 
   const addOption = () => {
     const newOption: QuizOption = {
@@ -78,6 +75,31 @@ export default function ManualQuizPage() {
     setQuestions(questions.filter((q) => q.id !== questionId))
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    if (index === -1) {
+      optionRefs.current[0]?.focus();
+    } else {
+      optionRefs.current[index + 1]?.focus();
+    }
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    if (index === 0) {
+      questionRef.current?.focus();
+    } else if (index > 0) {
+      optionRefs.current[index - 1]?.focus();
+    }
+  }
+};
+
+ const submitQst = async()=>{
+       if(questions.length >=1){
+           await addQuestions(questions,roomId as string)
+       }
+ }
+
+
   return (
     <div className="min-h-screen bg-gray-200">
       {/* Hero Section */}
@@ -87,7 +109,8 @@ export default function ManualQuizPage() {
             Create Your Own Quiz Manually
           </h1>
           <p className="text-lg text-gray-600 leading-relaxed">
-            Add your own questions and answers to craft a unique real-time quiz experience.
+            Add your own questions and answers to craft a unique real-time quiz
+            experience.
           </p>
         </div>
       </section>
@@ -103,9 +126,11 @@ export default function ManualQuizPage() {
           {/* Question Input */}
           <textarea
             placeholder="Enter your question..."
+            ref={questionRef}
             value={currentQuestion}
             onChange={(e) => setCurrentQuestion(e.target.value)}
             rows={3}
+            onKeyDown={(e) => handleKeyDown(e, -1)}
             className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#bbe65b] focus:outline-none mb-4"
           />
 
@@ -116,10 +141,14 @@ export default function ManualQuizPage() {
                 <div className="flex-1 relative">
                   <input
                     type="text"
+                    ref={(el) => {
+                      optionRefs.current[index] = el;
+                    }}
                     placeholder={`Option ${index + 1}`}
                     value={option.text}
                     onChange={(e) => updateOption(option.id, e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-[#bbe65b]"
+                    onKeyDown={(e) => handleKeyDown(e, index)}
                   />
                   <button
                     type="button"
@@ -171,7 +200,9 @@ export default function ManualQuizPage() {
         {/* Quiz Preview */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Quiz Preview</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Quiz Preview
+            </h2>
             <span className="text-sm px-3 py-1 rounded-full bg-[#bbe65b] text-gray-700">
               {questions.length} Questions
             </span>
@@ -183,34 +214,51 @@ export default function ManualQuizPage() {
                 <Plus className="w-8 h-8" />
               </div>
               <p>No questions added yet</p>
-              <p className="text-sm mt-1">Start by adding your first question</p>
+              <p className="text-sm mt-1">
+                Start by adding your first question
+              </p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {questions.map((q, i) => (
-                <div key={q.id} className="p-4 bg-gray-50 rounded-xl border">
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">{i + 1}. {q.question}</h4>
-                    <button
-                      onClick={() => removeQuestion(q.id)}
-                      className="text-sm text-red-500 hover:underline"
-                    >
-                      Remove
-                    </button>
+            <div>
+              <div className="space-y-4 max-h-96 overflow-y-auto ">
+                {questions.map((q, i) => (
+                  <div key={q.id} className="p-4 bg-gray-50 rounded-xl border">
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="font-medium text-gray-900">
+                        {i + 1}. {q.question}
+                      </h4>
+                      <button
+                        onClick={() => removeQuestion(q.id)}
+                        className="text-sm text-red-500 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                      {q.options.map((opt, j) => (
+                        <li
+                          key={j}
+                          className={
+                            opt.isCorrect ? "font-semibold text-green-700" : ""
+                          }
+                        >
+                          {opt.text}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="list-disc pl-5 text-gray-700 space-y-1">
-                    {q.options.map((opt, j) => (
-                      <li key={j} className={opt.isCorrect ? "font-semibold text-green-700" : ""}>
-                        {opt.text}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                ))}
+              </div>
+              <button
+                onClick={submitQst}
+                className="mt-6 w-full py-3 px-4 rounded-xl bg-green-900 text-white font-medium hover:bg-green-800 disabled:bg-gray-300"
+              >
+                Submit
+              </button>
             </div>
           )}
         </div>
       </section>
     </div>
-  )
+  );
 }

@@ -9,6 +9,7 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs'
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,24 +58,28 @@ export default function RootLayout({
             <a href="#" className="text-gray-600 hover:text-gray-900 text-sm">Contact</a>
           </div>
           <div className="flex items-center space-x-4">
-            <a href="#" className="text-gray-600 hover:text-gray-900 text-sm">Log in</a>
-            <a href="#" className="bg-green-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Sign Up</a>
-          </div>
+  <SignedOut>
+    <SignInButton>
+      <button className="text-gray-600 hover:text-gray-900 text-sm">
+        Log in
+      </button>
+    </SignInButton>
+
+    <SignUpButton>
+      <button className="bg-green-900 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        Sign Up
+      </button>
+    </SignUpButton>
+  </SignedOut>
+
+  <SignedIn>
+    <UserButton />
+  </SignedIn>
+</div>
+
         </div>
       </nav>
-       {/* <header className="flex justify-end items-center p-4 gap-4 h-16">
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton>
-                <button className="bg-[#6c47ff] text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          </header> */}
+      <Toaster position="top-right" reverseOrder={false} />
         {children}
       </body>
     </html>
