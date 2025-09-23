@@ -23,3 +23,13 @@ export const addQuestions = async(questions:QuizQuestion[],roomId:string) => {
   }
 };
 
+export const fetchRoomsByUser = async(userId:string) => {
+  try {
+    const res = await api.get(roomRoutes.fetchQuestionByUser,{params:{userId}});
+    toast.success(res.data.message,);
+    return res.data;
+  } catch (error) {
+    alert(error) 
+  }
+};
+
